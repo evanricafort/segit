@@ -33,7 +33,7 @@ run_nmap_scans() {
     
     # Version and Service Detection Scan on discovered ports
     echo -e "${CYAN}Running version and service detection scan on discovered ports...${NC}"
-    nmap -sV -sC -iL "$scan_input" --open $nmap_opts -oA "nmap_output_files/service_scan"
+    nmap -sV -sC -iL "$scan_input" $nmap_opts -oA "nmap_output_files/service_scan"
     
     echo -e "${GREEN}All Nmap scans completed.${NC}"
 }
