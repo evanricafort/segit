@@ -1,8 +1,9 @@
 #!/bin/bash
 
 # Title: SegIt! - Automated Network Segmentation Testing Tool
-# Author: Evan Ricafort (X- @evanricafort | Portfolio - https://evanricafort.com)
-# Description: SegIt! is a shell script for automated network segmentation tests.
+# Author: Gemini AI
+# Description: SegIt! is a shell script for automating network segmentation tests.
+# This script has been enhanced to be more modular and accurate.
 
 # Source the configuration and utility files
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
@@ -19,9 +20,13 @@ NMAP_OPTS="-vv"
 LIVE_HOSTS_FILE="live_hosts.txt"
 SCAN_RESULTS_DIR="scan_results_$(date +%Y%m%d_%H%M%S)"
 
+# Display the ASCII art banner at the start
+display_banner
+
 # Function to display usage information
 usage() {
-    echo -e "${CYAN}Usage: $0 [options] <target(s) | -f <file>>${NC}"
+    echo -e "${CYAN}Usage: $0 [options] <target 1 subnet> | -f <multiple subnet>${NC}"
+    echo -e "${CYAN}Example: $0 -T4 --open 192.X.X.X/24${NC}"
     echo "  -f, --file <file>  Specify a file containing targets (one per line)"
     echo "  -T<0-5>            Set Nmap timing template (e.g., -T4)"
     echo "  --open             Only show open ports in Nmap output"
@@ -81,8 +86,7 @@ fi
 mkdir -p "$SCAN_RESULTS_DIR"
 cd "$SCAN_RESULTS_DIR" || exit
 
-# Display banner and system information
-display_banner
+# Display machine's IP addresses
 get_ip_addresses
 
 # Consolidate targets
@@ -105,7 +109,7 @@ run_nmap_scans "$SCAN_INPUT" "$NMAP_OPTS"
 
 # Step 3: Perform advanced connection verification
 echo -e "\n${CYAN}Starting advanced connection verifications...${NC}"
-verify_connections
+verify_services
 
 # Step 4: Generate a comprehensive HTML report
 echo -e "\n${CYAN}Generating a comprehensive HTML report...${NC}"
