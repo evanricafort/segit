@@ -15,6 +15,27 @@ generate_html_report() {
         report_title+=" for targets from file: $targets_file"
     fi
 
+    # Check if files exist before reading, and get line counts
+    local total_targets_count=0
+    if [ -f "../all_targets.txt" ]; then
+        total_targets_count=$(wc -l < "../all_targets.txt")
+    fi
+    
+    local live_hosts_count=0
+    if [ -f "../live_hosts.txt" ]; then
+        live_hosts_count=$(wc -l < "../live_hosts.txt")
+    fi
+
+    local tcp_open_ports_count=0
+    if [ -f "open_tcp_ports.txt" ]; then
+        tcp_open_ports_count=$(awk '{print $1}' open_tcp_ports.txt | wc -l)
+    fi
+
+    local udp_open_ports_count=0
+    if [ -f "open_udp_ports.txt" ]; then
+        udp_open_ports_count=$(awk '{print $1}' open_udp_ports.txt | wc -l)
+    fi
+
     # HTML Header
     cat << EOF > "$html_file"
 <!DOCTYPE html>
@@ -22,7 +43,7 @@ generate_html_report() {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>$report_title</title>
+    <title>SegIT! Network Segmentation Test Report</title>
     <style>
         body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 20px; background-color: #f4f7f6; color: #333; }
         .container { max-width: 1000px; margin: auto; background: #fff; padding: 20px; box-shadow: 0 0 10px rgba(0,0,0,0.1); border-radius: 8px; }
@@ -57,7 +78,16 @@ generate_html_report() {
         <div class="info">
             This test was performed on the following target(s) or subnet(s).
         </div>
-        <pre>$(cat ../all_targets.txt)</pre>
+EOF
+
+    # Add scan scope only if the file exists
+    if [ -f "../all_targets.txt" ]; then
+        cat ../all_targets.txt >> "$html_file"
+    else
+        echo "No targets file found." >> "$html_file"
+    fi
+
+    cat << EOF >> "$html_file"
     </div>
 
     <div class="section">
@@ -75,19 +105,19 @@ generate_html_report() {
             <tbody>
                 <tr>
                     <td>Total Targets</td>
-                    <td>$(wc -l < ../all_targets.txt)</td>
+                    <td>$total_targets_count</td>
                 </tr>
                 <tr>
                     <td>Live Hosts Found</td>
-                    <td>$(wc -l < ../live_hosts.txt)</td>
+                    <td>$live_hosts_count</td>
                 </tr>
                 <tr>
                     <td>Total TCP Open Ports</td>
-                    <td>$(awk '{print $1}' open_tcp_ports.txt 2>/dev/null | wc -l)</td>
+                    <td>$tcp_open_ports_count</td>
                 </tr>
                 <tr>
                     <td>Total UDP Open Ports</td>
-                    <td>$(awk '{print $1}' open_udp_ports.txt 2>/dev/null | wc -l)</td>
+                    <td>$udp_open_ports_count</td>
                 </tr>
             </tbody>
         </table>
