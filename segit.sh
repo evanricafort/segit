@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Title: SegIt! - Automated Network Segmentation Testing Tool
+# Title: SegIt! - Automated Network Segmentation Testing Kit
 # Author: Evan Ricafort (X - @evanricafort | Portfolio - https://evanricafort.com)
 # Description: SegIt! is a shell script for automated network segmentation tests.
 
