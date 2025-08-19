@@ -19,6 +19,9 @@ NMAP_OPTS="-vv"
 LIVE_HOSTS_FILE="live_hosts.txt"
 SCAN_RESULTS_DIR="scan_results_$(date +%Y%m%d_%H%M%S)"
 
+# Record the start time
+START_TIME=$(date +"%Y-%m-%d %H:%M:%S %Z")
+
 # Display the ASCII art banner at the start
 display_banner
 
@@ -110,9 +113,12 @@ run_nmap_scans "$SCAN_INPUT" "$NMAP_OPTS"
 echo -e "\n${CYAN}Starting advanced connection verifications...${NC}"
 verify_services
 
+# Record the end time
+END_TIME=$(date +"%Y-%m-%d %H:%M:%S %Z")
+
 # Step 4: Generate a comprehensive HTML report
 echo -e "\n${CYAN}Generating a comprehensive HTML report...${NC}"
-generate_html_report
+generate_html_report "$TARGETS" "$TARGETS_FILE" "$START_TIME" "$END_TIME"
 echo -e "${GREEN}Report generated successfully! Check the output directory: $(pwd)${NC}"
 
 # Clean up temporary files
