@@ -17,13 +17,13 @@ generate_html_report() {
 
     # Check if files exist before reading, and get line counts
     local total_targets_count=0
-    if [ -f "../all_targets.txt" ]; then
-        total_targets_count=$(wc -l < "../all_targets.txt")
+    if [ -f "all_targets.txt" ]; then
+        total_targets_count=$(wc -l < "all_targets.txt")
     fi
     
     local live_hosts_count=0
-    if [ -f "../live_hosts.txt" ]; then
-        live_hosts_count=$(wc -l < "../live_hosts.txt")
+    if [ -f "live_hosts.txt" ]; then
+        live_hosts_count=$(wc -l < "live_hosts.txt")
     fi
 
     local tcp_open_ports_count=0
@@ -36,6 +36,14 @@ generate_html_report() {
         udp_open_ports_count=$(awk '{print $1}' open_udp_ports.txt | wc -l)
     fi
 
+    # Read the content of the all_targets.txt file into a variable
+    local all_targets_content=""
+    if [ -f "all_targets.txt" ]; then
+        all_targets_content=$(cat "all_targets.txt")
+    else
+        all_targets_content="No targets file found."
+    fi
+
     # HTML Header
     cat << EOF > "$html_file"
 <!DOCTYPE html>
@@ -43,7 +51,7 @@ generate_html_report() {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>$report_title</title>
+    <title>SegIt! - Automated Network Segmentation Testing Toolkit</title>
     <style>
         body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 20px; background-color: #f4f7f6; color: #333; }
         .container { max-width: 1000px; margin: auto; background: #fff; padding: 20px; box-shadow: 0 0 10px rgba(0,0,0,0.1); border-radius: 8px; }
@@ -68,7 +76,7 @@ generate_html_report() {
 <body>
 <div class="container">
     <header>
-        <h1>$report_title</h1>
+        <h1>SegIt! Network Segmentation Test Report</h1>
         <p><strong>Scan Started:</strong> $start_time</p>
         <p><strong>Scan Finished:</strong> $end_time</p>
     </header>
@@ -78,7 +86,7 @@ generate_html_report() {
         <div class="info">
             This test was performed on the following target(s) or subnet(s).
         </div>
-        <pre>$(cat ../all_targets.txt 2>/dev/null)</pre>
+        <pre>$all_targets_content</pre>
     </div>
 
     <div class="section">
@@ -193,10 +201,10 @@ nmap_xml_parser() {
         grep -oP '<host .*?</host>' "$xml_file" | while read -r host_line; do
             ip=$(echo "$host_line" | grep -oP '(?<=addr=").*?(?=")')
             echo "$host_line" | grep -oP '<port protocol=".*?" portid=".*?">.*?</port>' | while read -r port_line; do
-                port=$(echo "$port_line" | grep -oP '(?<=portid=").*?(?=")')
-                protocol=$(echo "$port_line" | grep -oP '(?<=protocol=").*?(?=")')
-                service=$(echo "$port_line" | grep -oP '(?<=<service name=").*?(?=")')
-                state=$(echo "$port_line" | grep -oP '(?<=<state state=").*?(?=")')
+                port=$(echo "$port_line" | grep -oP '(?<=portid=").*?(?=\")')
+                protocol=$(echo "$port_line" | grep -oP '(?<=protocol=").*?(?=\")')
+                service=$(echo "$port_line" | grep -oP '(?<=<service name=").*?(?=\")')
+                state=$(echo "$port_line" | grep -oP '(?<=<state state=").*?(?=\")')
 
                 if [ "$state" == "open" ]; then
                     if [ "$proto_filter" == "all" ] || [ "$protocol" == "$proto_filter" ]; then
