@@ -81,7 +81,7 @@ while [[ "$#" -gt 0 ]]; do
             fi
             
             # Prompt user for webhook URL
-            echo -e "${CYAN}Enter Discord Webhook URL:${NC}\n"
+            echo -e "${CYAN}Enter Discord Webhook URL:${NC}"
             read -r DISCORD_WEBHOOK
             if [ -z "$DISCORD_WEBHOOK" ]; then
                 echo -e "${RED}Error:${NC} Webhook URL cannot be empty."
