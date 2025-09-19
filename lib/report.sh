@@ -6,6 +6,7 @@ generate_html_report() {
     local targets_file="$2"
     local start_time="$3"
     local end_time="$4"
+    local duration="$5"
     local html_file="SegIt_Report.html"
     
     local report_title="SegIt! Network Segmentation Test Report"
@@ -79,6 +80,7 @@ generate_html_report() {
         <h1>SegIt! Network Segmentation Test Report</h1>
         <p><strong>Scan Started:</strong> $start_time</p>
         <p><strong>Scan Finished:</strong> $end_time</p>
+        <p><strong>Total Duration:</strong> $duration</p>
     </header>
     
     <div class="section">
@@ -199,7 +201,7 @@ nmap_xml_parser() {
     local proto_filter="$2"
     if [ -f "$xml_file" ]; then
         grep -oP '<host .*?</host>' "$xml_file" | while read -r host_line; do
-            ip=$(echo "$host_line" | grep -oP '(?<=addr=").*?(?=")')
+            ip=$(echo "$host_line" | grep -oP '(?<=addr=").*?(?=\")')
             echo "$host_line" | grep -oP '<port protocol=".*?" portid=".*?">.*?</port>' | while read -r port_line; do
                 port=$(echo "$port_line" | grep -oP '(?<=portid=").*?(?=\")')
                 protocol=$(echo "$port_line" | grep -oP '(?<=protocol=").*?(?=\")')
