@@ -43,7 +43,7 @@ generate_html_report() {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SegIT! Network Segmentation Test Report</title>
+    <title>$report_title</title>
     <style>
         body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 20px; background-color: #f4f7f6; color: #333; }
         .container { max-width: 1000px; margin: auto; background: #fff; padding: 20px; box-shadow: 0 0 10px rgba(0,0,0,0.1); border-radius: 8px; }
@@ -78,16 +78,7 @@ generate_html_report() {
         <div class="info">
             This test was performed on the following target(s) or subnet(s).
         </div>
-EOF
-
-    # Add scan scope only if the file exists
-    if [ -f "../all_targets.txt" ]; then
-        cat ../all_targets.txt >> "$html_file"
-    else
-        echo "No targets file found." >> "$html_file"
-    fi
-
-    cat << EOF >> "$html_file"
+        <pre>$(cat ../all_targets.txt 2>/dev/null)</pre>
     </div>
 
     <div class="section">
@@ -126,47 +117,29 @@ EOF
     <div class="section">
         <h2>Detailed Findings</h2>
         <div class="tab-menu">
-            <button class="tab-button active" onclick="openTab(event, 'open-ports')">Open Ports</button>
+            <button class="tab-button active" onclick="openTab(event, 'all-open-ports')">All Open Ports</button>
             <button class="tab-button" onclick="openTab(event, 'netcat-verifications')">Service Verifications</button>
         </div>
 
-        <div id="open-ports" class="tab-content active">
-            <h3>TCP Open Ports</h3>
+        <div id="all-open-ports" class="tab-content active">
+            <h3>All Discovered Open Ports</h3>
+            <p>This table lists all ports identified as open by the Nmap scans, regardless of protocol.</p>
             <table class="results-table">
                 <thead>
                     <tr>
                         <th>IP Address</th>
                         <th>Port</th>
+                        <th>Protocol</th>
                         <th>Service</th>
                     </tr>
                 </thead>
                 <tbody>
 EOF
-    # Populate TCP ports table from Nmap XML
+    # Populate a combined table with all open ports from all Nmap XML files
     if [ -f "nmap_output_files/service_scan.xml" ]; then
-        nmap_xml_parser "nmap_output_files/service_scan.xml" "tcp" >> "$html_file"
+        nmap_xml_parser "nmap_output_files/service_scan.xml" "all" >> "$html_file"
     fi
     
-    cat << EOF >> "$html_file"
-                </tbody>
-            </table>
-
-            <h3>UDP Open Ports</h3>
-            <table class="results-table">
-                <thead>
-                    <tr>
-                        <th>IP Address</th>
-                        <th>Port</th>
-                        <th>Service</th>
-                    </tr>
-                </thead>
-                <tbody>
-EOF
-    # Populate UDP ports table from Nmap XML
-    if [ -f "nmap_output_files/udp_scan.xml" ]; then
-        nmap_xml_parser "nmap_output_files/udp_scan.xml" "udp" >> "$html_file"
-    fi
-
     cat << EOF >> "$html_file"
                 </tbody>
             </table>
@@ -215,14 +188,21 @@ EOF
 # Helper function to parse Nmap XML and format for HTML
 nmap_xml_parser() {
     local xml_file="$1"
-    local proto="$2"
+    local proto_filter="$2"
     if [ -f "$xml_file" ]; then
         grep -oP '<host .*?</host>' "$xml_file" | while read -r host_line; do
             ip=$(echo "$host_line" | grep -oP '(?<=addr=").*?(?=")')
-            echo "$host_line" | grep -oP '<port protocol="'"$proto"'" portid=".*?">.*?</port>' | while read -r port_line; do
+            echo "$host_line" | grep -oP '<port protocol=".*?" portid=".*?">.*?</port>' | while read -r port_line; do
                 port=$(echo "$port_line" | grep -oP '(?<=portid=").*?(?=")')
+                protocol=$(echo "$port_line" | grep -oP '(?<=protocol=").*?(?=")')
                 service=$(echo "$port_line" | grep -oP '(?<=<service name=").*?(?=")')
-                echo "<tr><td>$ip</td><td>$port</td><td>$service</td></tr>"
+                state=$(echo "$port_line" | grep -oP '(?<=<state state=").*?(?=")')
+
+                if [ "$state" == "open" ]; then
+                    if [ "$proto_filter" == "all" ] || [ "$protocol" == "$proto_filter" ]; then
+                        echo "<tr><td>$ip</td><td>$port</td><td>$protocol</td><td>$service</td></tr>"
+                    fi
+                fi
             done
         done
     fi
