@@ -36,7 +36,7 @@ usage() {
     echo "  --open             Only show open ports in Nmap output"
     echo "  --fast             Only scan the 1000 most common ports"
     echo "  --keep             Do not remove temporary files after scan completion"
-    echo "  --discord          Send scan results to a Discord webhook"
+    echo "  --discord          Send scan results to a Discord server"
     echo "  -h, --help         Display this help message"
     exit 1
 }
@@ -130,27 +130,27 @@ else
 fi
 
 # Step 2: Perform detailed port and service scanning
-echo -e "\n${CYAN}Starting detailed port and service scans...${NC}"
+echo -e "\n${CYAN}Starting detailed port and service scans...${NC}\n"
 run_nmap_scans "$SCAN_INPUT" "$NMAP_OPTS"
 
 # Step 3: Perform advanced connection verification
-echo -e "\n${CYAN}Starting advanced connection verifications...${NC}"
+echo -e "\n${CYAN}Starting advanced connection verifications...${NC}\n"
 verify_services
 
 # Step 4: Generate a comprehensive HTML report
-echo -e "\n${CYAN}Generating a comprehensive HTML report...${NC}"
+echo -e "\n${CYAN}Generating a comprehensive HTML report...${NC}\n"
 
 # Record the end time
 END_TIME=$(date +"%Y-%m-%d %H:%M:%S %Z")
 
 # Pass the targets, start time, and end time to the reporting function
 generate_html_report "$TARGETS" "$TARGETS_FILE" "$START_TIME" "$END_TIME"
-echo -e "${GREEN}Report generated successfully! Check the output directory: $(pwd)${NC}"
+echo -e "${GREEN}Report generated successfully! Check the output directory: $(pwd)${NC}\n"
 
 # Step 5: Send results to Discord if webhook is provided
 if [ -n "$DISCORD_WEBHOOK" ]; then
     echo -e "\n${CYAN}Archiving results and sending to Discord...${NC}"
-    send_to_discord "$DISCORD_WEBHOOK" "$SCAN_RESULTS_DIR" "$targets" "$targets_file"
+    send_to_discord "$DISCORD_WEBHOOK" "$SCAN_RESULTS_DIR" "$TARGETS" "$TARGETS_FILE" "$START_TIME" "$END_TIME"
 fi
 
 # Step 6: Clean up temporary files (or keep them)
