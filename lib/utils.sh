@@ -16,7 +16,7 @@ display_banner() {
 ▐                      ░░██████                            ▌
 ▐                       ░░░░░░                             ▌
 ▐▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▌                      
-
+      [Automated Network Segmentation Testing Toolkit]
                   by: evan (@evanricafort)      
               
 EOF
@@ -25,6 +25,7 @@ EOF
 
 # Function to get and display the machine's IP addresses
 get_ip_addresses() {
+    echo
     echo -e "${CYAN}Retrieving machine's IP address(es)...${NC}"
     
     if command -v ip &> /dev/null; then
