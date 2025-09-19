@@ -130,22 +130,22 @@ else
 fi
 
 # Step 2: Perform detailed port and service scanning
-echo -e "\n${CYAN}Starting detailed port and service scans...${NC}\n"
+echo -e "\n${CYAN}Starting detailed port and service scans...${NC}"
 run_nmap_scans "$SCAN_INPUT" "$NMAP_OPTS"
 
 # Step 3: Perform advanced connection verification
-echo -e "\n${CYAN}Starting advanced connection verifications...${NC}\n"
+echo -e "\n${CYAN}Starting advanced connection verifications...${NC}"
 verify_services
 
 # Step 4: Generate a comprehensive HTML report
-echo -e "\n${CYAN}Generating a comprehensive HTML report...${NC}\n"
+echo -e "\n${CYAN}Generating a comprehensive HTML report...${NC}"
 
 # Record the end time
 END_TIME=$(date +"%Y-%m-%d %H:%M:%S %Z")
 
 # Pass the targets, start time, and end time to the reporting function
 generate_html_report "$TARGETS" "$TARGETS_FILE" "$START_TIME" "$END_TIME"
-echo -e "${GREEN}Report generated successfully! Check the output directory: $(pwd)${NC}\n"
+echo -e "${GREEN}Report generated successfully! Check the output directory: $(pwd)${NC}"
 
 # Step 5: Send results to Discord if webhook is provided
 if [ -n "$DISCORD_WEBHOOK" ]; then
