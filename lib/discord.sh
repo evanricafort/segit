@@ -10,6 +10,7 @@ send_to_discord() {
     local targets_file="$4"
     local start_time="$5"
     local end_time="$6"
+    local duration="$7"
 
     # Define the archive file name
     local archive_name="${dir_name}.zip"
@@ -28,7 +29,7 @@ send_to_discord() {
     echo -e "${CYAN}Uploading to Discord...${NC}"
     local response=$(curl -s -X POST -H "Content-Type: multipart/form-data" \
         -F "file=@../$archive_name" \
-        -F "payload_json={\"content\":\"**SegIt! Full Reconnaissance Report**\\nScan started on: $start_time\\nScan completed on: $end_time\"}" \
+        -F "payload_json={\"content\":\"**SegIt! Full Reconnaissance Report**\\nScan started on: $start_time\\nScan completed on: $end_time\\nTotal Duration: $duration\"}" \
         "$webhook_url")
 
     # Check for upload errors
