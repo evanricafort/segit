@@ -14,10 +14,6 @@ send_to_discord() {
     # Define the archive file name
     local archive_name="${dir_name}.zip"
 
-    # Create the start and end time files inside the scan directory
-    echo "$start_time" > "start_time.txt"
-    echo "$end_time" > "end_time.txt"
-
     # Create the zip archive in the parent directory using a subshell
     echo -e "${CYAN}Creating zip archive of results...${NC}"
     # The -j flag ensures files are not stored with directory paths
@@ -28,22 +24,11 @@ send_to_discord() {
     fi
     echo -e "${GREEN}Archive created: ${YELLOW}$archive_name${NC}"
 
-    # Prepare a message to send with the file
-    local message_content="SegIt! scan results for: "
-    if [ -n "$targets" ]; then
-        message_content+="$targets"
-    elif [ -n "$targets_file" ]; then
-        message_content+="targets from file: $targets_file"
-    else
-        message_content+="unknown targets"
-    fi
-    message_content+=".\nScan started at: $start_time\nScan finished at: $end_time"
-
     # Send the zip file to Discord using curl
     echo -e "${CYAN}Uploading to Discord...${NC}"
     local response=$(curl -s -X POST -H "Content-Type: multipart/form-data" \
         -F "file=@../$archive_name" \
-        -F "payload_json={\"content\": \"$message_content\"}" \
+        -F "payload_json={\"content\":\"**SegIt! Full Reconnaissance Report**\\nScan started on: $start_time\\nScan completed on: $end_time\"}" \
         "$webhook_url")
 
     # Check for upload errors
