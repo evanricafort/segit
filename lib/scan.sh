@@ -20,20 +20,24 @@ run_nmap_scans() {
     mkdir -p "nmap_output_files"
     
     # TCP SYN Scan for open ports
-    echo -e "${CYAN}Running TCP SYN scan (all ports)...${NC}"
+    echo
+    echo -e "${CYAN}Running TCP SYN scan (all ports)...${NC}\n"
     nmap -sS -p- -iL "$scan_input" $nmap_opts -oA "nmap_output_files/tcp_syn_scan"
     
     # TCP Connect Scan (fallback)
-    echo -e "${CYAN}Running TCP Connect scan (all ports)...${NC}"
+    echo
+    echo -e "${CYAN}Running TCP Connect scan (all ports)...${NC}\n"
     nmap -sT -p- -iL "$scan_input" $nmap_opts -oA "nmap_output_files/tcp_connect_scan"
 
     # UDP Scan for open ports
-    echo -e "${CYAN}Running UDP scan (top 100 ports)...${NC}"
+    echo
+    echo -e "${CYAN}Running UDP scan (top 100 ports)...${NC}\n"
     nmap -sU --top-ports 100 -iL "$scan_input" $nmap_opts -oA "nmap_output_files/udp_scan"
     
     # Version and Service Detection Scan on discovered ports
-    echo -e "${CYAN}Running version and service detection scan on discovered ports...${NC}"
+    echo
+    echo -e "${CYAN}Running version and service detection scan on discovered ports...${NC}\n"
     nmap -sV -sC -iL "$scan_input" $nmap_opts -oA "nmap_output_files/service_scan"
-    
+    echo
     echo -e "${GREEN}All Nmap scans completed.${NC}"
 }
