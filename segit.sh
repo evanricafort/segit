@@ -24,6 +24,7 @@ DISCORD_WEBHOOK=""
 
 # Record the start time
 START_TIME=$(date +"%Y-%m-%d %H:%M:%S %Z")
+START_SEC=$(date +%s)
 
 # Display the ASCII art banner at the start
 display_banner
@@ -140,17 +141,23 @@ verify_services
 # Step 4: Generate a comprehensive HTML report
 echo -e "\n${CYAN}Generating a comprehensive HTML report...${NC}"
 
-# Record the end time
+# Record the end time and calculate duration
 END_TIME=$(date +"%Y-%m-%d %H:%M:%S %Z")
+END_SEC=$(date +%s)
+DURATION_SEC=$((END_SEC - START_SEC))
+DURATION_HOURS=$((DURATION_SEC / 3600))
+DURATION_MINUTES=$(((DURATION_SEC % 3600) / 60))
+DURATION_SECONDS=$((DURATION_SEC % 60))
+DURATION="${DURATION_HOURS}h ${DURATION_MINUTES}m ${DURATION_SECONDS}s"
 
-# Pass the targets, start time, and end time to the reporting function
-generate_html_report "$TARGETS" "$TARGETS_FILE" "$START_TIME" "$END_TIME"
+# Pass the targets, start time, end time, and duration to the reporting function
+generate_html_report "$TARGETS" "$TARGETS_FILE" "$START_TIME" "$END_TIME" "$DURATION"
 echo -e "${GREEN}Report generated successfully! Check the output directory: $(pwd)${NC}"
 
 # Step 5: Send results to Discord if webhook is provided
 if [ -n "$DISCORD_WEBHOOK" ]; then
     echo -e "\n${CYAN}Archiving results and sending to Discord...${NC}"
-    send_to_discord "$DISCORD_WEBHOOK" "$SCAN_RESULTS_DIR" "$TARGETS" "$TARGETS_FILE" "$START_TIME" "$END_TIME"
+    send_to_discord "$DISCORD_WEBHOOK" "$SCAN_RESULTS_DIR" "$TARGETS" "$TARGETS_FILE" "$START_TIME" "$END_TIME" "$DURATION"
 fi
 
 # Step 6: Clean up temporary files (or keep them)
