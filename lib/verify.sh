@@ -1,98 +1,83 @@
-# Function to perform advanced, protocol-aware service verification
+# File: lib/verify.sh
+
 verify_services() {
-    local tcp_results="tcp_verification_results.txt"
-    local udp_results="udp_verification_results.txt"
+    local traffic_from="$1"
+    local targets_file="$2"
+    local suffix="$3" # New argument for Compare Mode
+    
+    # Define output file with suffix
+    local output_csv="segmentation_results${suffix}.csv"
+    local nmap_dir="nmap_output_files${suffix}"
 
-    # Clear previous results
-    : > "$tcp_results"
-    : > "$udp_results"
+    # Detect source IP
+    local source_ip=$(ip -o -4 addr show | awk '!/127.0.0.1/ {print $4}' | cut -d/ -f1 | head -n1)
+    
+    echo -e "${CYAN}Performing Netcat verification (Iteration${suffix:-" Default"})...${NC}"
+    
+    echo "Traffic From,Traffic To,Status,Source IP,Destination IP,Open Ports,Notes" > "$output_csv"
 
-    echo -e "\n${CYAN}Starting advanced service verifications...${NC}"
-
-    # Parse open ports from the Nmap XML output
-    local open_ports_file="open_ports_with_services.txt"
-    if [ -f "nmap_output_files/service_scan.xml" ]; then
-        nmap_xml_parser "nmap_output_files/service_scan.xml" "all" > "$open_ports_file"
-    fi
-
-    if [ ! -s "$open_ports_file" ]; then
-        echo -e "${RED}No open ports found for verification.${NC}"
+    # Look for Nmap files in the specific directory
+    local nmap_files=$(ls ${nmap_dir}/*.nmap 2>/dev/null)
+    
+    if [ -z "$nmap_files" ]; then
+        echo -e "${RED}Error: No Nmap files found in ${nmap_dir}.${NC}"
         return
     fi
 
-    while read -r ip port proto service; do
-        echo -e "${MAGENTA}Verifying ${YELLOW}$service ($proto/$port)${MAGENTA} on ${YELLOW}$ip${NC}"
-        case "$proto/$port" in
-            # HTTP/S checks
-            "tcp/80" | "tcp/443")
-                # Use curl to send a HEAD request and check for a 200/301/302 response
-                if curl --head --connect-timeout 5 "http://$ip:$port" &> /dev/null; then
-                    echo -e "${GREEN}  -> Success: Web service confirmed.${NC}" | tee -a "$tcp_results"
-                else
-                    echo -e "${RED}  -> Failure: Web service did not respond as expected.${NC}" | tee -a "$tcp_results"
-                fi
-                ;;
-            # SSH checks
-            "tcp/22")
-                # Use ssh-keyscan to grab the server's public key banner
-                if ssh-keyscan -T 5 "$ip" 2>/dev/null | grep -q 'ssh-rsa'; then
-                    echo -e "${GREEN}  -> Success: SSH service banner received.${NC}" | tee -a "$tcp_results"
-                else
-                    echo -e "${RED}  -> Failure: SSH service did not respond with a valid banner.${NC}" | tee -a "$tcp_results"
-                fi
-                ;;
-            # DNS checks
-            "udp/53" | "tcp/53")
-                # Use dig to query a common domain
-                if dig @$ip google.com +short &> /dev/null; then
-                    echo -e "${GREEN}  -> Success: DNS service responded to query.${NC}" | tee -a "$udp_results"
-                else
-                    echo -e "${RED}  -> Failure: DNS service did not resolve query.${NC}" | tee -a "$udp_results"
-                fi
-                ;;
-            # Default fallback for other TCP ports
-            "tcp/"*)
-                # Fallback to a simple netcat connection test
-                if nc -z -w 2 "$ip" "$port"; then
-                    echo -e "${YELLOW}  -> Note: No specific protocol check available. TCP connection succeeded.${NC}" | tee -a "$tcp_results"
-                else
-                    echo -e "${RED}  -> Failure: TCP connection refused or timed out.${NC}" | tee -a "$tcp_results"
-                fi
-                ;;
-            # Default fallback for other UDP ports
-            "udp/"*)
-                # Fallback to a simple netcat connection test
-                if nc -u -z -w 2 "$ip" "$port"; then
-                    echo -e "${YELLOW}  -> Note: No specific protocol check available. UDP connection succeeded.${NC}" | tee -a "$udp_results"
-                else
-                    echo -e "${RED}  -> Failure: UDP connection failed or timed out.${NC}" | tee -a "$udp_results"
-                fi
-                ;;
-        esac
-    done < "$open_ports_file"
+    local combined_data=$(awk '
+        /Nmap scan report for/ { ip = $NF }
+        /open/ {
+            split($1, port_info, "/")
+            port = port_info[1]
+            protocol = port_info[2]
+            service = $3
+            if (protocol == "tcp" || protocol == "udp") {
+                print ip ":" port ":" protocol ":" service
+            }
+        }' $nmap_files | sort -t: -k1,1V -k2,2n | uniq)
 
-    echo -e "${GREEN}Advanced service verifications completed.${NC}"
-}
+    # Terminal Output Header
+    printf "\n%-17s %-20s %-8s %-15s %-15s %-15s %-30s\n" "Traffic From" "Traffic To" "Status" "Source IP" "Dest IP" "Port/Proto" "Notes"
+    printf "%-17s %-20s %-8s %-15s %-15s %-15s %-30s\n" "-------------" "--------------------" "------" "---------------" "---------------" "---------------" "------------------------------"
 
-# Helper function to parse Nmap XML and format for internal use
-nmap_xml_parser() {
-    local xml_file="$1"
-    local proto_filter="$2"
-    if [ -f "$xml_file" ]; then
-        grep -oP '<host .*?</host>' "$xml_file" | while read -r host_line; do
-            ip=$(echo "$host_line" | grep -oP '(?<=addr=").*?(?=")')
-            echo "$host_line" | grep -oP '<port protocol=".*?" portid=".*?">.*?</port>' | while read -r port_line; do
-                port=$(echo "$port_line" | grep -oP '(?<=portid=").*?(?=")')
-                protocol=$(echo "$port_line" | grep -oP '(?<=protocol=").*?(?=")')
-                service=$(echo "$port_line" | grep -oP '(?<=<service name=").*?(?=")')
-                state=$(echo "$port_line" | grep -oP '(?<=<state state=").*?(?=")')
+    if [ -z "$combined_data" ]; then
+        echo -e "${YELLOW}No open ports found. Recording PASS.${NC}"
+        while read -r target; do
+            echo "$traffic_from,$target,PASS,$source_ip,N/A,N/A,No open ports detected" >> "$output_csv"
+        done < "$targets_file"
+    else
+        while IFS=: read -r ip port protocol service; do
+            local status="PASS"
+            local notes=""
+            local traffic_to=$(grep -w "$ip" "$targets_file" || echo "$ip")
 
-                if [ "$state" == "open" ]; then
-                    if [ "$proto_filter" == "all" ] || [ "$protocol" == "$proto_filter" ]; then
-                        echo "$ip $port $protocol $service"
-                    fi
+            if [ "$protocol" == "tcp" ]; then
+                if nc -zv -w 2 "$ip" "$port" &>/dev/null; then
+                    status="FAIL"
+                    notes=$(nc -zvvv -w 2 "$ip" "$port" 2>&1 | grep -Ei "(open|succeeded|refused)" | sed 's/^.*: //' | sed "s/$/ (TCP)/" | head -n1)
+                    if [ -z "$notes" ]; then notes="Connection Successful (TCP)"; fi
+                else
+                    notes="Connection Refused/Timeout (TCP)"
                 fi
-            done
-        done
+            elif [ "$protocol" == "udp" ]; then
+                if nc -uzv -w 2 "$ip" "$port" &>/dev/null; then
+                    status="FAIL"
+                    notes=$(nc -uzvvv -w 2 "$ip" "$port" 2>&1 | grep -Ei "(open|succeeded|refused)" | sed 's/^.*: //' | sed "s/$/ (UDP)/" | head -n1)
+                    if [ -z "$notes" ]; then notes="Connection Successful (UDP)"; fi
+                else
+                    notes="No Response (UDP)"
+                fi
+            fi
+
+            echo "$traffic_from,$traffic_to,$status,$source_ip,$ip,$port/$protocol,$notes" >> "$output_csv"
+            
+            local color_status="$GREEN$status$NC"
+            if [ "$status" == "FAIL" ]; then color_status="$RED$status$NC"; fi
+            
+            printf "%-17s %-20s %-18b %-15s %-15s %-15s %-30s\n" \
+                "$traffic_from" "${traffic_to:0:20}" "$color_status" "$source_ip" "$ip" "$port/$protocol" "$notes"
+                
+        done <<< "$combined_data"
     fi
+    echo -e "\n${GREEN}Iteration complete. Saved to $output_csv${NC}"
 }
