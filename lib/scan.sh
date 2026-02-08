@@ -1,3 +1,5 @@
+# File: lib/scan.sh
+
 # Function to perform live host discovery
 scan_live_hosts() {
     local scan_input="$1"
@@ -16,28 +18,29 @@ scan_live_hosts() {
 run_nmap_scans() {
     local scan_input="$1"
     local nmap_opts="$2"
+    local suffix="$3"
 
-    mkdir -p "nmap_output_files"
+    # Create distinct directory for this run
+    local output_dir="nmap_output_files${suffix}"
+    mkdir -p "$output_dir"
     
-    # TCP SYN Scan for open ports
-    echo
-    echo -e "${CYAN}Running TCP SYN scan (all ports)...${NC}\n"
-    nmap -sS -p- -iL "$scan_input" $nmap_opts -oA "nmap_output_files/tcp_syn_scan"
+    echo -e "${CYAN}Saving Nmap results to: ${YELLOW}$output_dir${NC}"
+
+    # TCP SYN Scan
+    echo -e "\n${CYAN}Running TCP SYN scan (all ports)...${NC}"
+    nmap -sS -p- -iL "$scan_input" $nmap_opts -oA "${output_dir}/tcp_syn_scan"
     
     # TCP Connect Scan (fallback)
-    echo
-    echo -e "${CYAN}Running TCP Connect scan (all ports)...${NC}\n"
-    nmap -sT -p- -iL "$scan_input" $nmap_opts -oA "nmap_output_files/tcp_connect_scan"
+    echo -e "\n${CYAN}Running TCP Connect scan (all ports)...${NC}"
+    nmap -sT -p- -iL "$scan_input" $nmap_opts -oA "${output_dir}/tcp_connect_scan"
 
-    # UDP Scan for open ports
-    echo
-    echo -e "${CYAN}Running UDP scan (top 100 ports)...${NC}\n"
-    nmap -sU --top-ports 100 -iL "$scan_input" $nmap_opts -oA "nmap_output_files/udp_scan"
+    # UDP Scan
+    echo -e "\n${CYAN}Running UDP scan (top 100 ports)...${NC}"
+    nmap -sU --top-ports 100 -iL "$scan_input" $nmap_opts -oA "${output_dir}/udp_scan"
     
-    # Version and Service Detection Scan on discovered ports
-    echo
-    echo -e "${CYAN}Running version and service detection scan on discovered ports...${NC}\n"
-    nmap -sV -sC -iL "$scan_input" $nmap_opts -oA "nmap_output_files/service_scan"
-    echo
-    echo -e "${GREEN}All Nmap scans completed.${NC}"
+    # Version/Service Detection
+    echo -e "\n${CYAN}Running version detection...${NC}"
+    nmap -sV -sC -iL "$scan_input" $nmap_opts -oA "${output_dir}/service_scan"
+    
+    echo -e "${GREEN}Nmap scans completed for this iteration.${NC}"
 }
